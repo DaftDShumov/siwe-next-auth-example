@@ -18,6 +18,7 @@
     "Lluis Agusti <hi@llu.lu>"
   ],
   "dependencies": {
+    "@google-cloud/firestore": "^7.7.0",
     "ethers": "^5.7.1",
     "next": "latest",
     "next-auth": "^4.12.2",
