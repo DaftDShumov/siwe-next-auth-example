@@ -4,6 +4,7 @@ import { useAccount, useConnect, useNetwork, useSignMessage } from "wagmi"
 import Layout from "../components/layout"
 import { InjectedConnector } from 'wagmi/connectors/injected'
 import { useEffect, useState } from "react"
+import { useRouter } from "next/router"
 
 function Siwe() {
   const { signMessageAsync } = useSignMessage()
@@ -13,27 +14,42 @@ function Siwe() {
     connector: new InjectedConnector(),
   });
   const { data: session, status } = useSession()
+  const router = useRouter()
+  const telegramId = router.query.telegramId;
+  console.log(`Telegram ID is ${telegramId}`)
+
+  const buildMessage = async () => {
+    const baseMessage = {
+      domain: window.location.host,
+      address: address,
+      statement: "Sign in with Ethereum to the app.",
+      uri: window.location.origin,
+      version: "1",
+      chainId: chain?.id,
+      nonce: await getCsrfToken()
+    }
+    if (!Array.isArray(telegramId) && telegramId !== undefined && telegramId != "") {
+      return { ...baseMessage, resources: [`Connect with telegram id ${telegramId}`] }
+    } else {
+      return { ...baseMessage }
+    }
+  }
 
   const handleLogin = async () => {
     try {
       const callbackUrl = "/protected"
-      const message = new SiweMessage({
-        domain: window.location.host,
-        address: address,
-        statement: "Sign in with Ethereum to the app.",
-        uri: window.location.origin,
-        version: "1",
-        chainId: chain?.id,
-        nonce: await getCsrfToken(),
-      })
+      const siweMessageContent = await buildMessage()
+      console.log(`Siwe message content ${JSON.stringify(siweMessageContent, null, 2)}`)
+      const message = new SiweMessage(siweMessageContent)
       const signature = await signMessageAsync({
         message: message.prepareMessage(),
       })
       signIn("credentials", {
         message: JSON.stringify(message),
         redirect: false,
+        telegramId: telegramId,
         signature,
-        callbackUrl,
+        callbackUrl
       })
     } catch (error) {
       window.alert(error)
